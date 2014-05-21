@@ -39,9 +39,10 @@ class Chef
         content = Chef::JSONCompat.to_json_pretty(existing_bag_item_content)
         updated_content = nil
         loop do
-          unparsed = edit_text content
+          unparsed = edit_text(existing_bag_item_content["contents"])
+
           begin
-            updated_content = Chef::JSONCompat.from_json(unparsed)
+            updated_content = existing_bag_item_content.update("contents" => unparsed)
             break
           rescue Yajl::ParseError => e
             loop do
