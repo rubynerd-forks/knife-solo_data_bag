@@ -27,6 +27,10 @@ class Chef
         :long => '--data-bag-path DATA_BAG_PATH',
         :description => 'The path to data bag'
 
+      option :yaml,
+        long: '--as-yaml',
+        description: "edit the contents key as a YAML file"
+
       def run
         Chef::Config[:solo]   = true
         @bag_name, @item_name = @name_args
@@ -38,14 +42,22 @@ class Chef
       def edit_content
         content = Chef::JSONCompat.to_json_pretty(existing_bag_item_content)
         updated_content = nil
-        puts "editing content!"
-        puts "content: #{existing_bag_item_content.keys}"
+        output "editing content!"
+        output "content: #{existing_bag_item_content.keys}"
 
         loop do
-          unparsed = edit_text(existing_bag_item_content["contents"])
+          if config[:yaml]
+            unparsed = edit_text(existing_bag_item_content["contents"])
+          else
+            unparsed = edit_text content
+          end
 
           begin
-            updated_content = existing_bag_item_content.update("contents" => unparsed)
+            if config[:yaml]
+              updated_content = existing_bag_item_content.update("contents" => unparsed)
+            else
+              updated_content = Chef::JSONCompat.from_json(unparsed)
+            end
             break
           rescue Yajl::ParseError => e
             loop do
@@ -70,7 +82,12 @@ class Chef
       end
 
       def edit_text(text)
-        tf = Tempfile.new(['knife-edit', '.json'])
+        if config[:yaml]
+          tf = Tempfile.new(['knife-edit', '.yaml'])
+        else
+          tf = Tempfile.new(['knife-edit', '.json'])
+        end
+
         tf.sync = true
         tf.puts text
         tf.close
