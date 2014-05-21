@@ -38,6 +38,9 @@ class Chef
       def edit_content
         content = Chef::JSONCompat.to_json_pretty(existing_bag_item_content)
         updated_content = nil
+        puts "editing content!"
+        puts "content: #{existing_bag_item_content.keys}"
+
         loop do
           unparsed = edit_text(existing_bag_item_content["contents"])
 
